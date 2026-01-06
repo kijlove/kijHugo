@@ -1,0 +1,35 @@
+name: Deploy Hugo Site
+
+on:
+  push:
+    branches:
+      - main  # 当你向 main 分支推送代码时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive  # 如果你用了 Git 子模块管理主题，这步很重要
+          fetch-depth: 0
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest'
+          extended: true # 如果你的主题需要扩展版 Hugo
+
+      - name: Build
+        run: hugo --minify
+
+      - name: Deploy to Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: "-avz --delete"
+          SOURCE: "public/"  # 待发送的文件夹
+          REMOTE_HOST: ${{ secrets.SERVER_IP }}
+          REMOTE_USER: "root" # 或者是你的登录用户名
+          TARGET: "/usr/share/nginx/html/" # 你的 Nginx 网页根目录
